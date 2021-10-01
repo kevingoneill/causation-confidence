@@ -6,7 +6,7 @@ library(modelr)
 library(bayestestR)
 library(tidybayes)
 library(viridis)
-library(scico)
+library(ggthemes)
 library(patchwork)
 library(ggquiver)
 library(latex2exp)
@@ -259,7 +259,7 @@ p.cause.data <- draws %>%
     ggplot(aes(x=p_C, y=p_A, u=`dP(C).value`, v=`dP(A).value`)) +
     geom_raster(aes(fill=Function.value)) +
     geom_quiver(color='white', size=.25, center=TRUE) +
-    scale_fill_viridis(name='Mean\nCausal\nJudgment', option='magma') +
+    scale_fill_viridis(name='Mean\nCausal\nJudgment', option='magma', direction=-1) +
     scale_x_continuous(breaks=c(0, .25, .5, .75, 1), labels=c('0', '.25', '.5', '.75', '1')) +
     scale_y_continuous(breaks=c(0, .25, .5, .75, 1), labels=c('0', '.25', '.5', '.75', '1')) +
     xlab('Probability of Focal Cause') + ylab('Probability of Alternate Cause') +
@@ -275,8 +275,8 @@ p.cause.pred <- ggplot(df.pred, aes(x=p_C, y=p_A, fill=K)) +
     scale_fill_viridis(name=TeX('$\\kappa_{C\\rightarrow E}$'), option='magma', limits=c(0,1)) +
     theme_classic() + coord_fixed()
 
-(p.cause.data | p.cause.pred) + plot_layout(widths=c(1/6, 5/6))
-ggsave('plots/gp-model-cause.png', width=12, height=4)
+(p.cause.data | p.cause.pred) + plot_layout(widths=c(1/6, 5/6)) + plot_annotation(tag_levels='A')
+ggsave('plots/gp-model-cause.pdf', width=12, height=4)
 
 
 
@@ -308,8 +308,9 @@ p.conf.pred <- df.pred %>%
     xlab('Probability of Focal Cause') + ylab('Probability of Alternate Cause') +
     scale_fill_viridis(name=TeX('$Var(\\kappa_{C\\rightarrow E}$)'), option='magma') +
     theme_classic() + coord_fixed()
-(p.conf.data | p.conf.pred) + plot_layout(widths=c(1/6, 5/6))
-ggsave('plots/gp-model-var.png', width=12, height=4)
+
+(p.conf.data | p.conf.pred) + plot_layout(widths=c(1/6, 5/6)) + plot_annotation(tag_levels='A')
+ggsave('plots/gp-model-var.pdf', width=12, height=4)
 
 
 p.conf.pred <- df.pred %>%
@@ -323,8 +324,8 @@ p.conf.pred <- df.pred %>%
     xlab('Probability of Focal Cause') + ylab('Probability of Alternate Cause') +
     scale_fill_viridis(name=TeX('$\\sigma_{\\kappa_{C\\rightarrow E}$}'), option='magma') +
     theme_classic() + coord_fixed()
-(p.conf.data | p.conf.pred) + plot_layout(widths=c(1/6, 5/6))
-ggsave('plots/gp-model-sd.png', width=12, height=4)
+(p.conf.data | p.conf.pred) + plot_layout(widths=c(1/6, 5/6)) + plot_annotation(tag_levels='A')
+ggsave('plots/gp-model-sd.pdf', width=12, height=4)
 
 
 p.conf.pred <- df.pred %>%
@@ -338,8 +339,8 @@ p.conf.pred <- df.pred %>%
     xlab('Probability of Focal Cause') + ylab('Probability of Alternate Cause') +
     scale_fill_viridis(name=TeX('$CV(\\kappa_{C\\rightarrow E}$)'), option='magma') +
     theme_classic() + coord_fixed()
-(p.conf.data | p.conf.pred) + plot_layout(widths=c(1/6, 5/6))
-ggsave('plots/gp-model-cv.png', width=12, height=4)
+(p.conf.data | p.conf.pred) + plot_layout(widths=c(1/6, 5/6)) + plot_annotation(tag_levels='A')
+ggsave('plots/gp-model-cv.pdf', width=12, height=4)
 
 
 p.conf.pred <- df.pred %>%
@@ -353,8 +354,8 @@ p.conf.pred <- df.pred %>%
     xlab('Probability of Focal Cause') + ylab('Probability of Alternate Cause') +
     scale_fill_viridis(name=TeX('$H(\\kappa_{C\\rightarrow E}$)'), option='magma') +
     theme_classic() + coord_fixed()
-(p.conf.data | p.conf.pred) + plot_layout(widths=c(1/6, 5/6))
-ggsave('plots/gp-model-entropy.png', width=12, height=4)
+(p.conf.data | p.conf.pred) + plot_layout(widths=c(1/6, 5/6)) + plot_annotation(tag_levels='A')
+ggsave('plots/gp-model-entropy.pdf', width=12, height=4)
 
 
 
@@ -378,7 +379,7 @@ draws.model <- draws.mu %>%
     ## reverse correlations for confidence
     mutate(value=ifelse(variable=='K', value, -value),
            model=factor(model, levels=c('deltaP', 'PPC', 'SP', 'Icard', 'Quillien'),
-                        labels=c('Delta P', 'Power PC', 'Crediting Causality', 'Necessity-Sufficiency', 'Counterfactual Effect Size'))) %>%
+                        labels=c('Delta P', 'Power PC', 'Crediting\nCausality', 'Necessity\nSufficiency', 'Counterfactual\nEffect Size'))) %>%
     replace_na(list(value=0))
 
 draws.model %>%
@@ -395,12 +396,12 @@ draws.model %>%
                  position=position_dodge(width=-.5),
                  point_interval='median_hdi',
                  normalize='panels') +
-    scale_fill_discrete(name='Causal Structure') +
+    scale_fill_manual(name='Causal Structure', values=colorblind_pal()(3)[-1]) +
     facet_wrap(~variable, labeller=labeller(variable=c('K'='Causal Judgment', 'K.sd'='Confidence'))) +
     ylab('Model') + xlab('Correlation') +
     theme_classic() +
     theme(legend.position='bottom')
-ggsave('plots/model_comparisons.png', width=10, height=5)
+ggsave('plots/model_comparisons.pdf', width=10, height=5)
 
 
 draws.model %>%
@@ -412,12 +413,12 @@ draws.model %>%
                  position=position_dodge(width=-.5),
                  point_interval='median_hdi',
                  normalize='panels') +
-    scale_fill_discrete(name='Causal Structure') +
+    scale_fill_manual(name='Causal Structure', values=colorblind_pal()(3)[-1]) +
     facet_wrap(~variable, labeller=labeller(variable=c('K.var'='Variance', 'K.cv'='Coefficient of Variation',
                                                        'K.entropy'='Entropy'))) +
     ylab('Model') + xlab('Correlation') +
     theme_classic() +
     theme(legend.position='bottom')
-ggsave('plots/model_comparisons_confidence.png', width=10, height=5)
+ggsave('plots/model_comparisons_confidence.pdf', width=10, height=5)
 
 
