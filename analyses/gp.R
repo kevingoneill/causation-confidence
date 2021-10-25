@@ -259,7 +259,7 @@ p.cause.data <- draws %>%
     ggplot(aes(x=p_C, y=p_A, u=`dP(C).value`, v=`dP(A).value`)) +
     geom_raster(aes(fill=Function.value)) +
     geom_quiver(color='white', size=.25, center=TRUE) +
-    scale_fill_viridis(name='Mean\nCausal\nJudgment', option='magma', direction=-1) +
+    scale_fill_viridis(name='Mean\nCausal\nJudgment', option='magma') +
     scale_x_continuous(breaks=c(0, .25, .5, .75, 1), labels=c('0', '.25', '.5', '.75', '1')) +
     scale_y_continuous(breaks=c(0, .25, .5, .75, 1), labels=c('0', '.25', '.5', '.75', '1')) +
     xlab('Probability of Focal Cause') + ylab('Probability of Alternate Cause') +
