@@ -1,5 +1,5 @@
 functions {
-  real ord_beta_reg_lpdf(real y, real mu, real phi, vector cutpoints) {  
+  real ord_beta_lpdf(real y, real mu, real phi, vector cutpoints) {  
     //auxiliary variables
     real mu_logit = logit(mu);
         
@@ -149,28 +149,29 @@ transformed parameters {
 
 model {
   for (i in 1:C) {
-    rho[i] ~ inv_gamma(6, 2);
-    alpha[i] ~ std_normal();
-    L_Omega[i] ~ lkj_corr_cholesky(3);
-    to_vector(eta[i]) ~ std_normal();
-
-    rho_tilde[i] ~ inv_gamma(6, 2);
-    L_Omega_tilde[i] ~ lkj_corr_cholesky(3);
+    target += inv_gamma_lpdf(rho[i] | 6, 2);
+    target += std_normal_lpdf(alpha[i]);
+    target += lkj_corr_cholesky_lpdf(L_Omega[i] | 3);
+    target += std_normal_lpdf(to_vector(eta[i]));
+    
+    target += inv_gamma_lpdf(rho_tilde[i] | 6, 2);
+    target += lkj_corr_cholesky_lpdf(L_Omega_tilde[i] | 3);
     for (j in 1:V) {      
-      alpha_tilde[i, j] ~ std_normal();
-      to_vector(eta_tilde[i, j]) ~ std_normal();
+      target += std_normal_lpdf(alpha_tilde[i, j]);
+      target += std_normal_lpdf(to_vector(eta_tilde[i, j]));
     }
   }
   
   for (dy in 1:Dy)
-    cutpoints[dy] ~ normal(0, 10);
+    target += normal_lpdf(cutpoints[dy] | 0, 10);
   
   if (!prior_only) {
     for (n in 1:N) {
-      for (dy in 1:Dy)
-	target += ord_beta_reg_lpdf(y[n, dy] | inv_logit(f[c[n], g[n], dy] + f_tilde[c[n], v[n], g[n], dy]),
-	                            exp(f[c[n], g[n], Dy+dy] + f_tilde[c[n], v[n], g[n], Dy+dy]),
-				    cutpoints[dy]);
+      for (dy in 1:Dy) {
+	target += ord_beta_lpdf(y[n, dy] | inv_logit(f[c[n], g[n], dy] + f_tilde[c[n], v[n], g[n], dy]),
+				exp(f[c[n], g[n], Dy+dy] + f_tilde[c[n], v[n], g[n], Dy+dy]),
+				cutpoints[dy]);
+      }
     }
   }
 }
@@ -298,10 +299,14 @@ generated quantities {
     }
   }
 
-
+  matrix[N, Dy] log_lik;
   matrix<lower=0, upper=1>[N, Dy] y_hat;
   for (n in 1:N) {
     for (dy in 1:Dy) {
+      log_lik[n, dy] = ord_beta_lpdf(y[n, dy] | inv_logit(f[c[n], g[n], dy] + f_tilde[c[n], v[n], g[n], dy]),
+				     exp(f[c[n], g[n], Dy+dy] + f_tilde[c[n], v[n], g[n], Dy+dy]),
+				     cutpoints[dy]);
+      
       int mixture = categorical_rng([p_0_tilde[c[n], v[n], g[n], dy],
 				     p_01_tilde[c[n], v[n], g[n], dy],
 				     p_1_tilde[c[n], v[n], g[n], dy]]');
@@ -310,7 +315,7 @@ generated quantities {
       else if (mixture == 2)
 	y_hat[n, dy] = beta_proportion_rng(mu_tilde[c[n], v[n], g[n], dy], phi_tilde[c[n], v[n], g[n], dy]);
       else
-	y_hat[n, dy] = 1;
+	y_hat[n, dy] = 1;      
     }
   }
 }
